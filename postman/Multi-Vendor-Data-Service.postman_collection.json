@@ -1,0 +1,693 @@
+{
+	"info": {
+		"_postman_id": "12345678-1234-1234-1234-123456789012",
+		"name": "Multi-Vendor Data Service",
+		"description": "Complete API collection for testing the Multi-Vendor Data Fetch Service with functional architecture",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "123456789"
+	},
+	"item": [
+		{
+			"name": "Health Checks",
+			"item": [
+				{
+					"name": "API Server Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"health"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Sync Vendor Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{sync_vendor_url}}/health",
+							"host": [
+								"{{sync_vendor_url}}"
+							],
+							"path": [
+								"health"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Async Vendor Health",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{async_vendor_url}}/health",
+							"host": [
+								"{{async_vendor_url}}"
+							],
+							"path": [
+								"health"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Job Management",
+			"item": [
+				{
+					"name": "Create Job - User Profile",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": {{test_user_id}},\n    \"action\": \"fetch_profile\",\n    \"timestamp\": \"{{$isoTimestamp}}\",\n    \"metadata\": {\n        \"source\": \"postman_test\",\n        \"version\": \"1.0\"\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/jobs",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"jobs"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Job - Data Enrichment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has request_id\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.request_id).to.exist;",
+									"    pm.environment.set(\"enrichment_request_id\", jsonData.request_id);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"customerId\": {{test_customer_id}},\n    \"requestType\": \"data_enrichment\",\n    \"fields\": [\"email\", \"phone\", \"address\", \"demographics\"],\n    \"priority\": \"high\",\n    \"source\": \"customer_portal\",\n    \"timestamp\": \"{{$isoTimestamp}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/jobs",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"jobs"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Create Job - Bulk Data Sync",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has request_id\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.request_id).to.exist;",
+									"    pm.environment.set(\"bulk_request_id\", jsonData.request_id);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"accountId\": \"acc_{{$randomAlphaNumeric}}\",\n    \"operation\": \"bulk_sync\",\n    \"source\": \"external_api\",\n    \"filters\": {\n        \"dateRange\": \"30d\",\n        \"includeDeleted\": false,\n        \"categories\": [\"users\", \"transactions\", \"metadata\"]\n    },\n    \"batchSize\": 1000,\n    \"priority\": \"normal\",\n    \"timestamp\": \"{{$isoTimestamp}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/jobs",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"jobs"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Job Status Tracking",
+			"item": [
+				{
+					"name": "Check Job Status - Profile",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has valid status\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var validStatuses = ['pending', 'processing', 'complete', 'failed'];",
+									"    pm.expect(validStatuses).to.include(jsonData.status);",
+									"});",
+									"",
+									"pm.test(\"Response has vendor assignment\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    var validVendors = ['sync', 'async'];",
+									"    pm.expect(validVendors).to.include(jsonData.vendor);",
+									"});",
+									"",
+									"if (pm.response.json().status === 'complete') {",
+									"    pm.test(\"Complete job has result\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData.result).to.exist;",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/jobs/{{last_request_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"jobs",
+								"{{last_request_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Check Job Status - Enrichment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has timestamps\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.created_at).to.exist;",
+									"    pm.expect(jsonData.updated_at).to.exist;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/jobs/{{enrichment_request_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"jobs",
+								"{{enrichment_request_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Check Job Status - Bulk Sync",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response structure is valid\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.request_id).to.exist;",
+									"    pm.expect(jsonData.status).to.exist;",
+									"    pm.expect(jsonData.vendor).to.exist;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/jobs/{{bulk_request_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"jobs",
+								"{{bulk_request_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Check Non-Existent Job",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 404\", function () {",
+									"    pm.response.to.have.status(404);",
+									"});",
+									"",
+									"pm.test(\"Error message is appropriate\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.error).to.exist;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/jobs/{{invalid_job_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"jobs",
+								"{{invalid_job_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "System Monitoring",
+			"item": [
+				{
+					"name": "System Metrics",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has job statistics\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.jobs).to.exist;",
+									"    pm.expect(jsonData.jobs.total).to.be.a('number');",
+									"    pm.expect(jsonData.jobs.pending).to.be.a('number');",
+									"    pm.expect(jsonData.jobs.processing).to.be.a('number');",
+									"    pm.expect(jsonData.jobs.completed).to.be.a('number');",
+									"    pm.expect(jsonData.jobs.failed).to.be.a('number');",
+									"});",
+									"",
+									"pm.test(\"Response has queue statistics\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.queue).to.exist;",
+									"    pm.expect(jsonData.queue.waiting).to.be.a('number');",
+									"    pm.expect(jsonData.queue.active).to.be.a('number');",
+									"});",
+									"",
+									"pm.test(\"Response has system information\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.system).to.exist;",
+									"    pm.expect(jsonData.system.uptime).to.be.a('number');",
+									"    pm.expect(jsonData.system.memory).to.exist;",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/metrics",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"metrics"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Load Testing Scenarios",
+			"item": [
+				{
+					"name": "Rapid Job Creation - Batch 1",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response time is acceptable\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"batchId\": 1,\n    \"testCase\": \"load_test_batch_1\",\n    \"userId\": {{$randomInt}},\n    \"action\": \"performance_test\",\n    \"timestamp\": \"{{$isoTimestamp}}\",\n    \"metadata\": {\n        \"loadTest\": true,\n        \"iteration\": 1\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/jobs",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"jobs"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Rapid Job Creation - Batch 2",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response time is acceptable\", function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(2000);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"batchId\": 2,\n    \"testCase\": \"load_test_batch_2\",\n    \"userId\": {{$randomInt}},\n    \"action\": \"performance_test\",\n    \"timestamp\": \"{{$isoTimestamp}}\",\n    \"metadata\": {\n        \"loadTest\": true,\n        \"iteration\": 2\n    }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/jobs",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"jobs"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Rate Limit Test",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Request completes successfully\", function () {",
+									"    pm.expect(pm.response.code).to.be.oneOf([200, 429]);",
+									"});",
+									"",
+									"if (pm.response.code === 429) {",
+									"    pm.test(\"Rate limit response is appropriate\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        pm.expect(jsonData.message).to.exist;",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"testCase\": \"rate_limit_test\",\n    \"userId\": {{$randomInt}},\n    \"action\": \"rate_limit_check\",\n    \"timestamp\": \"{{$isoTimestamp}}\",\n    \"rapidFire\": true\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/jobs",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"jobs"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Data Cleaning Validation",
+			"item": [
+				{
+					"name": "Create Job with Sensitive Data",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"Response has request_id\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.request_id).to.exist;",
+									"    pm.environment.set(\"sensitive_data_request_id\", jsonData.request_id);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": {{test_user_id}},\n    \"action\": \"data_cleaning_test\",\n    \"testData\": {\n        \"name\": \"  John Doe  \",\n        \"email\": \"JOHN.DOE@EXAMPLE.COM\",\n        \"phone\": \"123-456-7890\",\n        \"password\": \"secret123\",\n        \"ssn\": \"123-45-6789\",\n        \"creditCardNumber\": \"4111-1111-1111-1111\",\n        \"notes\": \"This contains sensitive data that should be cleaned\"\n    },\n    \"timestamp\": \"{{$isoTimestamp}}\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/jobs",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"jobs"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Data Cleaning",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"if (pm.response.json().status === 'complete') {",
+									"    pm.test(\"Sensitive fields are removed\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        if (jsonData.result) {",
+									"            pm.expect(jsonData.result.password).to.not.exist;",
+									"            pm.expect(jsonData.result.ssn).to.not.exist;",
+									"            pm.expect(jsonData.result.creditCardNumber).to.not.exist;",
+									"        }",
+									"    });",
+									"    ",
+									"    pm.test(\"Email is normalized\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        if (jsonData.result && jsonData.result.email) {",
+									"            pm.expect(jsonData.result.email).to.match(/^[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}$/);",
+									"        }",
+									"    });",
+									"    ",
+									"    pm.test(\"Phone is normalized\", function () {",
+									"        var jsonData = pm.response.json();",
+									"        if (jsonData.result && jsonData.result.phone) {",
+									"            pm.expect(jsonData.result.phone).to.match(/^\\+1\\d{10}$/);",
+									"        }",
+									"    });",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/jobs/{{sensitive_data_request_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"jobs",
+								"{{sensitive_data_request_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "sync_vendor_url",
+			"value": "http://localhost:3001",
+			"type": "string"
+		},
+		{
+			"key": "async_vendor_url",
+			"value": "http://localhost:3002",
+			"type": "string"
+		}
+	]
+} 
