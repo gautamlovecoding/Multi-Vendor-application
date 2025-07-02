@@ -1,0 +1,97 @@
+services:
+  mongodb:
+    image: mongo:7
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: vendordb
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - vendor-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - vendor-network
+
+  api:
+    build: .
+    container_name: api
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      MONGODB_URI: mongodb://admin:password@mongodb:27017/vendordb?authSource=admin
+      REDIS_URL: redis://redis:6379
+      SYNC_VENDOR_URL: http://sync-vendor:3001
+      ASYNC_VENDOR_URL: http://async-vendor:3002
+      WEBHOOK_BASE_URL: http://api:3000
+    depends_on:
+      - mongodb
+      - redis
+      - sync-vendor
+      - async-vendor
+    networks:
+      - vendor-network
+    command: ["node", "server.js"]
+
+  worker:
+    build: .
+    container_name: worker
+    environment:
+      NODE_ENV: production
+      MONGODB_URI: mongodb://admin:password@mongodb:27017/vendordb?authSource=admin
+      REDIS_URL: redis://redis:6379
+      SYNC_VENDOR_URL: http://sync-vendor:3001
+      ASYNC_VENDOR_URL: http://async-vendor:3002
+      WEBHOOK_BASE_URL: http://api:3000
+    depends_on:
+      - mongodb
+      - redis
+      - sync-vendor
+      - async-vendor
+    networks:
+      - vendor-network
+    command: ["node", "worker.js"]
+
+  sync-vendor:
+    build: .
+    container_name: sync-vendor
+    ports:
+      - "3001:3001"
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+    networks:
+      - vendor-network
+    command: ["node", "vendors/sync-vendor.js"]
+
+  async-vendor:
+    build: .
+    container_name: async-vendor
+    ports:
+      - "3002:3002"
+    environment:
+      NODE_ENV: production
+      PORT: 3002
+      WEBHOOK_BASE_URL: http://api:3000
+    networks:
+      - vendor-network
+    command: ["node", "vendors/async-vendor.js"]
+
+volumes:
+  mongodb_data:
+  redis_data:
+
+networks:
+  vendor-network:
+    driver: bridge 

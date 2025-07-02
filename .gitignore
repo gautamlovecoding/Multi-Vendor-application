@@ -1,0 +1,26 @@
+# Node.js dependencies
+node_modules/
+
+# Environment variables
+.env
+
+# Logs
+logs/
+*.log
+
+# Docker files
+*.dockerignore
+
+# Postman collections
+Multi-Vendor-Data-Service.postman_collection.json
+Multi-Vendor-Service.postman_environment.json
+
+# System files
+.DS_Store
+
+# Temporary files
+*.tmp
+*.temp
+
+# Other
+package-lock.json 
